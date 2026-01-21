@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ChevronRight } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -26,7 +28,8 @@ const Navbar = () => {
   return (
     <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`}>
       <div className="container nav-content">
-        <Link to="/" className="logo text-gradient" onClick={handleLinkClick}>
+        <Link to="/" className="logo text-gradient" onClick={handleLinkClick} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src="/src/assets/logo.png" alt="Multiverse Logo" style={{ height: '40px' }} />
           Multiverse Healthcare
         </Link>
 
@@ -47,9 +50,26 @@ const Navbar = () => {
           >
             Feasibility
           </Link>
-          <Link to="/contact" className="btn-primary">
-            Get Started <ChevronRight size={16} />
-          </Link>
+
+          {user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>Hi, {user.name.split(' ')[0]}</span>
+              <button
+                onClick={logout}
+                className="btn-primary"
+                style={{ background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', padding: '0.5rem 1rem' }}
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <Link to="/login" className="nav-link">Login</Link>
+              <Link to="/register" className="btn-primary">
+                Get Started <ChevronRight size={16} />
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Mobile Toggle */}
@@ -76,6 +96,17 @@ const Navbar = () => {
           >
             Feasibility
           </Link>
+          {user ? (
+            <>
+              <div className="mobile-link">Hi, {user.name}</div>
+              <button onClick={() => { logout(); handleLinkClick(); }} className="mobile-link" style={{ textAlign: 'left', background: 'none', border: 'none', padding: 0 }}>Logout</button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="mobile-link" onClick={handleLinkClick}>Login</Link>
+              <Link to="/register" className="mobile-link" onClick={handleLinkClick}>Sign Up</Link>
+            </>
+          )}
         </div>
       </div>
 

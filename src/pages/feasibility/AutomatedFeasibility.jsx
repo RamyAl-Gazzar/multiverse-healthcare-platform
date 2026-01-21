@@ -1,39 +1,89 @@
-import React, { useState, useEffect } from 'react';
-import { Bot, Save, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bot, ArrowRight, Save, Loader } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import StudyPreviewModal from '../../components/StudyPreviewModal';
+import { useAuth } from '../../context/AuthContext';
 
 const AutomatedFeasibility = () => {
-    useEffect(() => {
-        document.title = "Automated Feasibility | Multiverse Healthcare";
-    }, []);
-
+    const { user } = useAuth();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
+    const [saveStatus, setSaveStatus] = useState('');
+
     const [formData, setFormData] = useState({
-        projectName: '',
         location: '',
         specialty: '',
         budget: '',
-        timeline: '12 Months'
+        timeline: ''
     });
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleGeneratePPT = () => {
+    const handleGenerate = async () => {
+        if (!user) {
+            alert("Please login to generate and save a study.");
+            return;
+        }
+        if (!formData.specialty || !formData.location) {
+            alert("Please fill in all fields.");
+            return;
+        }
+
         setLoading(true);
-        // Simulate AI generation time
-        setTimeout(() => {
-            console.log("PPT Generation - Library Disabled");
-            setLoading(false);
-            setShowModal(true);
-        }, 1500);
+        setSaveStatus('Generating AI Report...');
+
+        // Simulate AI Generation delay
+        setTimeout(async () => {
+            // Mock AI Data generation based on inputs
+            const generatedData = {
+                ...formData,
+                title: `${formData.specialty} Clinic in ${formData.location}`,
+                type: 'Automated',
+                status: 'Completed',
+                data: {
+                    projectTitle: `${formData.specialty} Clinic Expansion`,
+                    executiveSummary: `Automated feasibility assessment for a ${formData.specialty} facility in ${formData.location} with a budget of ${formData.budget}.`,
+                    initialGoNoGo: 'Conditional Go',
+                    roiProjection: '18% - 22% (Estimated)',
+                    estimatedTimeline: formData.timeline || '12 Months',
+                    justification: 'Market analysis suggests high demand but competitive saturation requires niche positioning.',
+                    // ... other fields could be mocked here
+                }
+            };
+
+            try {
+                const response = await fetch('http://localhost:5000/api/studies', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${user.token}`,
+                    },
+                    body: JSON.stringify(generatedData),
+                });
+
+                if (response.ok) {
+                    setSaveStatus('Report Generated!');
+                    setShowModal(true);
+                } else {
+                    setSaveStatus('Error saving report');
+                    alert('Failed to save report');
+                }
+            } catch (error) {
+                console.error("Save failed", error);
+                setSaveStatus('Connection Error');
+            } finally {
+                setLoading(false);
+            }
+        }, 2000);
     };
 
     const handleDownload = () => {
-        alert("Downloading PowerPoint...");
+        // Logic handled in Modal, this just closes it after 'downloading'
         setShowModal(false);
+        navigate('/feasibility');
     };
 
     return (
@@ -92,15 +142,15 @@ const AutomatedFeasibility = () => {
                     </div>
 
                     <div className="action-bar">
-                        <button className="btn-secondary">
-                            <Save size={18} /> Save Draft
+                        <button className="btn-generate" onClick={handleGenerate} disabled={loading}>
+                            {loading ? <Loader className="spin" size={24} /> : <Bot size={24} />}
+                            {loading ? saveStatus : 'Initialize AI Analysis'}
                         </button>
                         <button
                             className="btn-primary"
-                            onClick={handleGeneratePPT}
+                            onClick={handleGenerate} // Changed to handleGenerate
                             disabled={!formData.projectName || loading}
                         >
-                            {loading ? '...' : <Save size={18} />}
                             {loading ? 'Generating...' : 'Generate Study'}
                         </button>
                     </div>

@@ -1,14 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { FileEdit, Save, Plus, Trash2 } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import StudyPreviewModal from '../../components/StudyPreviewModal';
+import { useAuth } from '../../context/AuthContext';
 
 const ManualFeasibility = () => {
     useEffect(() => {
         document.title = "Manual Feasibility | Multiverse Healthcare";
     }, []);
 
+    const { user } = useAuth();
+    const { id } = useParams(); // Get ID from URL if editing
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
+    const [saveStatus, setSaveStatus] = useState('');
+
+    // Fetch existing data if editing
+    useEffect(() => {
+        if (id && user) {
+            fetchStudyData(id);
+        }
+    }, [id, user]);
+
+    const fetchStudyData = async (studyId) => {
+        setLoading(true);
+        try {
+            const response = await fetch(`http://localhost:5000/api/studies`, { // Ideally we should have a GET /:id endpoint, but for now we filter locally or assuming we update the backend. Actually, studyController has no GET /:id for user? Checking... it does Update and Delete, but generic GET lists all. Let's use the list for now or assume we can filter from the list. Wait, standard REST usually implies GET /:id. The controller only has getStudies (all) and getAllStudies (admin). It lacks getSingleStudy for user.
+                // WORKAROUND: Fetch all and find, or add GET /:id to controller.
+                // Let's assume we can fetch all and find it for now to avoid touching backend immediately, or better, let's fix the backend.
+                // Actually, let's try to add the backend endpoint first? No, let's stick to frontend for a second.
+                // Using the 'getStudies' endpoint which returns array.
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            if (response.ok) {
+                const studies = await response.json();
+                const study = studies.find(s => s._id === studyId);
+                if (study) {
+                    setFormData(study.data);
+                } else {
+                    alert('Study not found');
+                    navigate('/feasibility/drafts');
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching study", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     const [formData, setFormData] = useState({
         // 1. Project Overview
@@ -131,7 +172,64 @@ const ManualFeasibility = () => {
         setFormData({ ...formData, risks: newRisks });
     };
 
-    const handleGeneratePPT = () => {
+    const handleSave = async (status = 'Draft') => {
+        if (!user) {
+            alert("Please login to save your study.");
+            return;
+        }
+        if (!formData.projectTitle) {
+            alert("Project Title is required to save.");
+            return;
+        }
+
+        setLoading(true);
+        setSaveStatus('Saving...');
+
+        try {
+            const url = id
+                ? `http://localhost:5000/api/studies/${id}`
+                : 'http://localhost:5000/api/studies';
+            const method = id ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${user.token}`,
+                },
+                body: JSON.stringify({
+                    title: formData.projectTitle,
+                    type: 'Manual',
+                    status,
+                    data: formData
+                }),
+            });
+
+            if (response.ok) {
+                const savedStudy = await response.json();
+                setSaveStatus(status === 'Draft' ? 'Draft Saved!' : 'Study Completed!');
+
+                // If we executed a create (POST), update URL to edit mode to avoid duplicates on subsequent saves
+                if (!id && savedStudy._id) {
+                    navigate(`/feasibility/manual/${savedStudy._id}`, { replace: true });
+                }
+
+                if (status === 'Draft') {
+                    setTimeout(() => setSaveStatus(''), 3000);
+                }
+            } else {
+                setSaveStatus('Error saving');
+            }
+        } catch (error) {
+            console.error("Save failed", error);
+            setSaveStatus('Error saving');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGeneratePPT = async () => {
+        await handleSave('Completed');
         setLoading(true);
         // Simulate processing time then open modal
         setTimeout(() => {
@@ -438,7 +536,8 @@ const ManualFeasibility = () => {
                     <div className="form-group"><label>Justification</label><textarea rows="3" name="justification" value={formData.justification} onChange={handleChange} /></div>
 
                     <div className="action-bar">
-                        <button className="btn-secondary">
+                        {saveStatus && <span style={{ marginRight: '1rem', color: '#059669', fontWeight: '500' }}>{saveStatus}</span>}
+                        <button className="btn-secondary" onClick={() => handleSave('Draft')}>
                             <Save size={18} /> Save Draft
                         </button>
                         <button

@@ -1,44 +1,64 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bot, FileEdit, ArrowRight, FileText, Plus, Clock, CheckCircle } from 'lucide-react';
+import { Bot, FileEdit, ArrowRight, FileText, Plus, Clock, CheckCircle, Loader } from 'lucide-react';
 import StudyPreviewModal from '../../components/StudyPreviewModal';
+import { useAuth } from '../../context/AuthContext';
 
 const FeasibilitySelection = () => {
     useEffect(() => {
         document.title = "Feasibility Dashboard | Multiverse Healthcare";
     }, []);
 
-    const [activeTab, setActiveTab] = useState('generated'); // 'drafts' or 'generated'
+    const { user } = useAuth();
+    const [activeTab, setActiveTab] = useState('generated');
     const [selectedStudy, setSelectedStudy] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [studies, setStudies] = useState([]);
+    const [loading, setLoading] = useState(false); // Change to true if auto-fetching
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchStudies = async () => {
+            if (!user) return;
+            setLoading(true);
+            try {
+                const response = await fetch('http://localhost:5000/api/studies', {
+                    headers: {
+                        Authorization: `Bearer ${user.token}`,
+                    },
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    setStudies(data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch studies", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStudies();
+    }, [user]);
 
     const handleViewReport = (study) => {
         setSelectedStudy({
             ...study,
-            projectTitle: study.name,
-            service: study.specialty || 'General Healthcare',
-            location: 'Riyadh, KSA',
-            budget: '2,500,000 SAR'
+            ...study.data, // Spread saved data
+            projectTitle: study.title,
+            date: new Date(study.updatedAt).toLocaleDateString()
         });
         setShowModal(true);
     };
 
     const handleDownload = () => {
-        alert("Downloading Historical Report...");
+        alert("Downloading Report...");
         setShowModal(false);
     };
 
-    // Mock Data
-    const drafts = [
-        { id: 1, name: 'Dubai Clinic Expansion', date: '2024-03-10', type: 'Manual' },
-        { id: 2, name: 'Cardiology Unit - Cairo', date: '2024-03-12', type: 'Automated' },
-    ];
-
-    const generatedStudies = [
-        { id: 11, name: 'Riyadh General Hospital', date: '2024-02-28', status: 'Completed', type: 'Automated' },
-        { id: 12, name: 'Jeddah Dental Center', date: '2024-03-01', status: 'Completed', type: 'Manual' },
-    ];
+    // Filter Studies
+    const drafts = studies.filter(s => s.status === 'Draft');
+    const generatedStudies = studies.filter(s => s.status === 'Completed');
 
     return (
         <div className="feasibility-page">
@@ -74,38 +94,46 @@ const FeasibilitySelection = () => {
 
                 {/* Tab Content */}
                 <div className="dashboard-content glass-panel">
-                    {activeTab === 'generated' && (
-                        <div className="study-list">
-                            {generatedStudies.map(study => (
-                                <div key={study.id} className="study-item">
-                                    <div className="study-info">
-                                        <div className="icon-box success"><FileText size={20} /></div>
-                                        <div>
-                                            <h3>{study.name}</h3>
-                                            <span className="meta">{study.date} • {study.type}</span>
+                    {loading ? (
+                        <div style={{ padding: '2rem', textAlign: 'center' }}><Loader className="spin" /> Loading studies...</div>
+                    ) : (
+                        <>
+                            {activeTab === 'generated' && (
+                                <div className="study-list">
+                                    {generatedStudies.length === 0 && <p style={{ padding: '1rem', color: '#666' }}>No completed studies found.</p>}
+                                    {generatedStudies.map(study => (
+                                        <div key={study._id} className="study-item">
+                                            <div className="study-info">
+                                                <div className="icon-box success"><FileText size={20} /></div>
+                                                <div>
+                                                    <h3>{study.title}</h3>
+                                                    <span className="meta">{new Date(study.updatedAt).toLocaleDateString()} • {study.type}</span>
+                                                </div>
+                                            </div>
+                                            <button className="btn-action" onClick={() => handleViewReport(study)}>View Report</button>
                                         </div>
-                                    </div>
-                                    <button className="btn-action" onClick={() => handleViewReport(study)}>View Report</button>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    )}
+                            )}
 
-                    {activeTab === 'drafts' && (
-                        <div className="study-list">
-                            {drafts.map(draft => (
-                                <div key={draft.id} className="study-item">
-                                    <div className="study-info">
-                                        <div className="icon-box draft"><FileEdit size={20} /></div>
-                                        <div>
-                                            <h3>{draft.name}</h3>
-                                            <span className="meta">Last edited: {draft.date} • {draft.type}</span>
+                            {activeTab === 'drafts' && (
+                                <div className="study-list">
+                                    {drafts.length === 0 && <p style={{ padding: '1rem', color: '#666' }}>No saved drafts.</p>}
+                                    {drafts.map(draft => (
+                                        <div key={draft._id} className="study-item">
+                                            <div className="study-info">
+                                                <div className="icon-box draft"><FileEdit size={20} /></div>
+                                                <div>
+                                                    <h3>{draft.title}</h3>
+                                                    <span className="meta">Last edited: {new Date(draft.updatedAt).toLocaleDateString()} • {draft.type}</span>
+                                                </div>
+                                            </div>
+                                            <button className="btn-action">Continue</button>
                                         </div>
-                                    </div>
-                                    <button className="btn-action">Continue</button>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
+                            )}
+                        </>
                     )}
                 </div>
 
@@ -115,6 +143,17 @@ const FeasibilitySelection = () => {
 
                 {/* Creation Section (Previously Selection) */}
                 <div className="selection-grid">
+                    <Link to="/feasibility/drafts" className="selection-card glass-panel" style={{ gridColumn: '1 / -1', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem 2rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div className="icon-wrapper" style={{ background: '#f0f9ff', color: '#0ea5e9' }}><Clock size={24} /></div>
+                            <div style={{ textAlign: 'left' }}>
+                                <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Saved Drafts</h3>
+                                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Continue working on your saved studies</p>
+                            </div>
+                        </div>
+                        <ArrowRight size={24} style={{ color: 'var(--text-secondary)' }} />
+                    </Link>
+
                     {/* Automated Path */}
                     <div className="selection-card glass-panel">
                         <div className="card-icon auto">
