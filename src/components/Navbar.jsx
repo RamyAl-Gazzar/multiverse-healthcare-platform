@@ -65,8 +65,8 @@ const Navbar = () => {
           ) : (
             <div style={{ display: 'flex', gap: '1rem' }}>
               <Link to="/login" className="nav-link">Login</Link>
-              <Link to="/register" className="btn-primary">
-                Get Started <ChevronRight size={16} />
+              <Link to="/gahar" className="btn-primary">
+                Get Started GAHAR <ChevronRight size={16} />
               </Link>
             </div>
           )}

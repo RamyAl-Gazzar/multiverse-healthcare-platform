@@ -9,8 +9,10 @@ import {
   BarChart2,
   TrendingUp,
   X,
-  CheckCircle2
+  CheckCircle2,
+  ChevronRight
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Services = () => {
   useEffect(() => {
@@ -143,6 +145,14 @@ const Services = () => {
                   ))}
                 </ul>
               </div>
+
+              {selectedService.id === 'gahar' && (
+                <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+                  <Link to="/gahar" className="btn-primary" style={{ display: 'inline-flex', justifyContent: 'center' }}>
+                    Proceed to Accreditation <ChevronRight size={16} />
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>

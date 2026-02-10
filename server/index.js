@@ -6,6 +6,9 @@ import studyRoutes from './routes/studyRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 
+import gaharRoutes from './routes/gaharRoutes.js';
+import assessmentRoutes from './routes/assessmentRoutes.js';
+
 dotenv.config();
 
 const app = express();
@@ -22,6 +25,9 @@ connectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/studies', studyRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/content', contentRoutes); // Added contentRoutes use
+app.use('/api/gahar', gaharRoutes);
+app.use('/api/assessments', assessmentRoutes);
 
 app.get('/', (req, res) => {
     res.send('Multiverse Healthcare API is running...');

@@ -6,4 +6,4 @@ const admin = (req, res, next) => {
     }
 };
 
-export { admin };
+module.exports = { admin };

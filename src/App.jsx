@@ -15,6 +15,8 @@ import AdminLayout from './layouts/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import ManageUsers from './pages/admin/ManageUsers'
 import ManageStudies from './pages/admin/ManageStudies'
+import GaharDashboard from './pages/gahar/GaharDashboard'
+import AssessmentScoring from './pages/gahar/AssessmentScoring'
 import './index.css'
 
 function App() {
@@ -34,6 +36,8 @@ function App() {
             <Route path="feasibility/manual" element={<ManualFeasibility />} />
             <Route path="feasibility/manual/:id" element={<ManualFeasibility />} />
             <Route path="feasibility/drafts" element={<SavedDrafts />} />
+            <Route path="gahar" element={<GaharDashboard />} />
+            <Route path="gahar/assessment/:id" element={<AssessmentScoring />} />
             <Route path="*" element={<div className="container" style={{ padding: '8rem 0' }}>Page Not Found</div>} />
           </Route>
           {/* Admin Routes */}

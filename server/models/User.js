@@ -6,6 +6,8 @@ const userSchema = mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     isAdmin: { type: Boolean, required: true, default: false },
+    role: { type: String, enum: ['system_admin', 'facility_admin', 'assessor', 'user'], default: 'user' },
+    facility: { type: mongoose.Schema.Types.ObjectId, ref: 'Facility' },
 }, {
     timestamps: true,
 });
